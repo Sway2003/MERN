@@ -1,15 +1,27 @@
+require ('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
-const Product = require('./models/model');
-
+const productRoute = require('./routes/productRoute');
+const errorMiddleware = require('./middleware/errorMiddleware');
+var cors = require('cors');
+const MONGO_URL = process.env.MONGO_URL;
+var corsOptions = {
+  origin: 'http://localhost:4200'   , //your server
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
+app.use(cors());
 
+app.use('/api/product', productRoute);
+
+app.use(errorMiddleware);
 
 mongoose.set("strictQuery", false)
-mongoose.connect('mongodb+srv://swayamsbisoyi:swayams@api.7logcrw.mongodb.net/restApi?retryWrites=true&w=majority')
+mongoose.connect(MONGO_URL)
 .then(() =>{
   app.listen(3000, () => { 
     console.log("Listening on 3000");
@@ -22,69 +34,12 @@ mongoose.connect('mongodb+srv://swayamsbisoyi:swayams@api.7logcrw.mongodb.net/re
 
 //routes
 
-app.get('/', (req, res) => {
+app.get('/', (req, res) => {  
+   
     res.send("Hello World");
 
 });
 
-app.get('/product', async(req, res) => {
-  try {
-    const products = await Product.find({});
-    res.status(200).json({products});
-  }
-  catch (error) {
-    res.status(500).json({message: error.message});
-  }
-});
-
-app.get('/product/:id', async(req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    res.status(200).json({product});
-  }
-  catch (error) {
-    res.status(500).json({message: error.message});
-  }
-});
-
-app.delete('/product/:id', async(req, res) => {
- try {
-  const product = await Product.findByIdAndDelete(req.params.id);
-  if(!product){
-    res.status(404).json({message: "Product not found"});
-  }
-
-  return res.status(200).json({product});
-  
- } catch (error) {
-  res.status(500).json({message: error.message});
- }
-});
-
-app.put('/product/:id', async(req, res) => {
-  try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {new: true});
-    if(!product){
-      //cant find any product with the given id
-      return res.status(404).json({message: "Product not found"});
-    }
-    const updatedProduct = await Product.findById(req.params.id);
-    return res.status(200).json({updatedProduct});
-  } catch (error) {
-    res.status(500).json({message: error.message});
-  }
-});
-app.post('/product', async(req, res) => {
-  try {
-    const product = await Product.create(req.body);
-    res.status(201).json({product});
-    
-  } catch (error) {
-     console.log(error.message);
-     res.status(500).json({message: error.message});
-    
-  }
-  });
 
 
 
